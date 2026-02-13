@@ -16,4 +16,4 @@ reports/
 # Logs & Screenshots
 logs/
 *.log
-screenshots/
+/screenshots/

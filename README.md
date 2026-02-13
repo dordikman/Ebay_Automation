@@ -2,6 +2,22 @@
 
 E2E automation framework for eBay — search, filter by price, add to cart, and verify cart total.
 
+## Test Run Screenshots
+
+Screenshots captured automatically during a full E2E run via Selenoid Docker Grid:
+
+| Step | Screenshot |
+|---|---|
+| **1. Guest Login** — navigate to eBay homepage | ![Guest Login](docs/screenshots/01_guest_login_homepage.png) |
+| **2. Search** — search for "shoes" | ![Search Results](docs/screenshots/02_search_results.png) |
+| **3. Price Filter** — apply max price $220 | ![Price Filter](docs/screenshots/03_price_filter_applied.png) |
+| **4. Add to Cart** — item added successfully | ![Add to Cart](docs/screenshots/04_item_added_to_cart.png) |
+| **5. Cart Verification** — blocked by captcha (expected from Docker IP) | ![Cart Captcha](docs/screenshots/05_cart_captcha.png) |
+
+> These screenshots are captured automatically by the framework at each test step and attached to the Allure report.
+
+---
+
 ## Tech Stack
 
 | Technology | Purpose |
