@@ -11,6 +11,7 @@ allure-results/
 allure-report/
 playwright-report/
 .pytest_cache/
+reports/
 
 # Logs & Screenshots
 logs/
