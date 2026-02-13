@@ -26,6 +26,23 @@ services:
     networks:
       - grid
 
+  # ── Test Runner ──
+  # Runs pytest inside a container on the same network as Selenoid.
+  # Activated via profile: docker-compose --profile tests up
+  tests:
+    build: .
+    profiles: ["tests"]
+    environment:
+      - GRID_URL=http://selenoid:4444/wd/hub
+    volumes:
+      - ./reports:/app/reports
+      - ./screenshots:/app/screenshots
+      - ./logs:/app/logs
+    depends_on:
+      - selenoid
+    networks:
+      - grid
+
 networks:
   grid:
     driver: bridge
@@ -33,23 +50,21 @@ networks:
 # ──────────────────────────────────────────────────────
 # Usage:
 #   1. Pull browser images first:
-#      docker pull selenoid/vnc_chrome:131.0
-#      docker pull selenoid/vnc_firefox:133.0
+#      docker pull selenoid/vnc:chrome_128.0
+#      docker pull selenoid/vnc:firefox_125.0
 #
-#   2. Start Grid:
+#   2. Start Grid only (local dev):
 #      docker-compose up -d
 #
-#   3. Open Selenoid UI dashboard:
-#      http://localhost:8080
+#   3. Start Grid + run tests in container:
+#      docker-compose --profile tests up
 #
-#   4. Update config/config.yaml:
-#        grid:
-#          enabled: true
-#          url: "http://localhost:4444/wd/hub"
+#   4. Open Selenoid UI dashboard:
+#      http://localhost:8090
 #
-#   5. Run tests:
-#      pytest tests/ -n 3 --alluredir=reports/allure-results
+#   5. Run tests locally (without container):
+#      pytest tests/ -v --alluredir=reports/allure-results
 #
-#   6. Stop Grid:
-#      docker-compose down
+#   6. Stop everything:
+#      docker-compose --profile tests down
 # ──────────────────────────────────────────────────────

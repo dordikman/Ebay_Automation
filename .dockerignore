@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.gitignore
+
+# Runtime outputs (mounted as volumes instead)
+reports/
+screenshots/
+logs/

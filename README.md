@@ -47,7 +47,9 @@ Ebay_Automation_Project/
 │   └── screenshot.py            # Screenshot capture + Allure attachment
 ├── selenoid-config/
 │   └── browsers.json            # Selenoid browser images configuration
-├── docker-compose.yml           # Selenoid + Selenoid UI containers
+├── docker-compose.yml           # Selenoid + Selenoid UI + Test Runner containers
+├── Dockerfile                   # Test runner container image
+├── .dockerignore                # Excludes venv, cache, reports from Docker build
 ├── pytest.ini                   # pytest settings (asyncio mode, markers, addopts)
 └── requirements.txt             # Python dependencies
 ```
@@ -184,6 +186,52 @@ docker-compose down
 
 ---
 
+## Running Tests in a Docker Container (Full Stack)
+
+Instead of running pytest on your host machine, you can run the test runner itself inside a Docker container alongside Selenoid. This gives you a fully reproducible, single-command setup.
+
+### One command to run everything
+
+```bash
+docker-compose --profile tests up
+```
+
+This starts **three** services:
+
+| Service | Port | Description |
+|---|---|---|
+| **Selenoid** | `4444` | Browser grid manager |
+| **Selenoid UI** | `8090` | Live dashboard with VNC viewer |
+| **Tests** | — | pytest running in a container |
+
+The test runner container automatically connects to Selenoid via Docker networking (`GRID_URL` environment variable) — no config changes needed.
+
+### Build the test runner image
+
+```bash
+docker-compose build tests
+```
+
+### View results
+
+Reports, screenshots, and logs are mounted to your host via Docker volumes:
+
+```
+reports/        ← Allure results, HTML report, JUnit XML
+screenshots/    ← Failure & step screenshots
+logs/           ← Test run logs
+```
+
+### Stop everything
+
+```bash
+docker-compose --profile tests down
+```
+
+> **Note:** Running `docker-compose up -d` (without `--profile tests`) starts only Selenoid + UI, so local development with `pytest` on the host still works as before.
+
+---
+
 ## Viewing Reports
 
 Each test run creates a unique timestamped directory under `reports/`:
@@ -234,6 +282,7 @@ Import `reports/<TIMESTAMP>/junit-report.xml` into CI tools (Jenkins, GitLab CI,
 | `timeouts.element` | Element wait timeout (ms) | `10000` |
 | `grid.enabled` | Enable Selenoid Grid | `false` |
 | `grid.url` | Selenoid Grid URL | `http://localhost:4444/wd/hub` |
+| **Env: `GRID_URL`** | Overrides `grid.url` and enables grid (used by Docker) | — |
 | `browsers` | Browser matrix list | chromium, firefox, webkit |
 | `retry.max_attempts` | Max retry attempts | `3` |
 | `retry.backoff_base` | Base delay for backoff (seconds) | `1.0` |
@@ -300,7 +349,9 @@ Each test gets its own `Playwright -> Browser -> BrowserContext -> Page`. No sta
 
 ---
 
-## Docker Architecture (Selenoid)
+## Docker Architecture
+
+### Local dev mode (`docker-compose up -d`)
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -326,6 +377,31 @@ Each test gets its own `Playwright -> Browser -> BrowserContext -> Page`. No sta
 └─────────────────────────────────────────────────┘
 ```
 
+### Full Docker mode (`docker-compose --profile tests up`)
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Docker Network (grid)                               │
+│                                                      │
+│  ┌──────────────────┐    ┌───────────────────────┐   │
+│  │  Test Runner      │    │  Selenoid (port 4444) │   │
+│  │  (pytest in       │───>│  Grid manager         │   │
+│  │   container)      │    └──────────┬────────────┘   │
+│  │                   │               │                │
+│  │  GRID_URL=        │   ┌───────────┴──────────┐     │
+│  │  selenoid:4444    │   │  Browser Containers  │     │
+│  └──────────────────┘   │  ┌────────────────┐  │     │
+│          │               │  │ Chrome 128.0   │  │     │
+│          ▼               │  │ (selenoid/vnc) │  │     │
+│  ┌──────────────────┐   │  └────────────────┘  │     │
+│  │  Volumes (host)   │   └──────────────────────┘     │
+│  │  ./reports/       │                                │
+│  │  ./screenshots/   │   ┌─────────────────────────┐  │
+│  │  ./logs/          │   │  Selenoid UI (port 8090) │  │
+│  └──────────────────┘   └─────────────────────────┘  │
+└──────────────────────────────────────────────────────┘
+```
+
 **Connection flow:**
 
 1. pytest calls `BrowserFactory.create_browser()`
@@ -334,3 +410,5 @@ Each test gets its own `Playwright -> Browser -> BrowserContext -> Page`. No sta
 4. Playwright connects via `connect_over_cdp()`
 5. Tests run through the CDP connection
 6. On cleanup: `DELETE /session` — Selenoid destroys the container
+
+> In full Docker mode, the test runner reaches Selenoid via Docker DNS (`selenoid:4444`) instead of `localhost:4444`. This is handled automatically by the `GRID_URL` environment variable.

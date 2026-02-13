@@ -24,8 +24,13 @@ with open(_config_path, "r", encoding="utf-8") as f:
 # Determine which browsers to test based on grid mode.
 # Selenoid Grid supports Chrome via CDP only.
 # Local mode supports all Playwright browsers (chromium, firefox, webkit).
+# GRID_URL env var (set by Docker) also activates grid mode.
+_grid_enabled = (
+    _raw_config.get("grid", {}).get("enabled", False)
+    or os.environ.get("GRID_URL") is not None
+)
 _BROWSERS = _raw_config.get("browsers", [{"name": "chromium"}])
-if _raw_config.get("grid", {}).get("enabled", False):
+if _grid_enabled:
     _BROWSERS = [b for b in _BROWSERS if b.get("name") in ("chromium", "chrome")]
     if not _BROWSERS:
         _BROWSERS = [{"name": "chromium", "channel": "chrome"}]
@@ -71,6 +76,13 @@ def pytest_configure(config):
 def config(request) -> dict:
     """Load config.yaml once per session."""
     cfg = dict(_raw_config)
+
+    # Allow Docker to override the grid URL via environment variable
+    grid_url_override = os.environ.get("GRID_URL")
+    if grid_url_override:
+        cfg.setdefault("grid", {})["url"] = grid_url_override
+        cfg["grid"]["enabled"] = True
+        logger.info(f"Grid URL overridden by GRID_URL env var: {grid_url_override}")
 
     # Use the run directory from pytest_configure
     run_dir = getattr(request.config, "_run_dir",
