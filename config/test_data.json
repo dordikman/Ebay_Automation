@@ -1,0 +1,31 @@
+{
+  "test_cases": [
+    {
+      "query": "shoes",
+      "max_price": 220,
+      "limit": 5,
+      "credentials": {
+        "username": "test_user",
+        "password": "test_pass"
+      }
+    },
+    {
+      "query": "headphones",
+      "max_price": 100,
+      "limit": 3,
+      "credentials": {
+        "username": "test_user",
+        "password": "test_pass"
+      }
+    },
+    {
+      "query": "laptop stand",
+      "max_price": 50,
+      "limit": 2,
+      "credentials": {
+        "username": "test_user",
+        "password": "test_pass"
+      }
+    }
+  ]
+}

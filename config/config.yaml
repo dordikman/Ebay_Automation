@@ -1,0 +1,26 @@
+base_url: "https://www.ebay.com"
+
+timeouts:
+  default: 30000
+  navigation: 60000
+  element: 10000
+
+grid:
+  enabled: true
+  url: "http://localhost:4444/wd/hub"
+
+browsers:
+  - name: chromium
+    channel: chrome
+  - name: firefox
+  - name: webkit
+
+retry:
+  max_attempts: 3
+  backoff_base: 1.0
+  backoff_factor: 2.0
+
+screenshots_dir: "screenshots"
+reports_dir: "reports"
+
+headless: false

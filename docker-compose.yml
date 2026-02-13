@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  selenoid:
+    image: aerokube/selenoid:latest
+    restart: unless-stopped
+    ports:
+      - "4444:4444"
+    environment:
+      - DOCKER_API_VERSION=1.44
+    volumes:
+      - //var/run/docker.sock:/var/run/docker.sock
+      - ./selenoid-config:/etc/selenoid:ro
+    command: ["-conf", "/etc/selenoid/browsers.json", "-limit", "4", "-container-network", "ebay_automation_project_grid", "-timeout", "5m", "-service-startup-timeout", "60s"]
+    networks:
+      - grid
+
+  selenoid-ui:
+    image: aerokube/selenoid-ui:latest
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    command: ["--selenoid-uri", "http://selenoid:4444"]
+    depends_on:
+      - selenoid
+    networks:
+      - grid
+
+networks:
+  grid:
+    driver: bridge
+
+# ──────────────────────────────────────────────────────
+# Usage:
+#   1. Pull browser images first:
+#      docker pull selenoid/vnc_chrome:131.0
+#      docker pull selenoid/vnc_firefox:133.0
+#
+#   2. Start Grid:
+#      docker-compose up -d
+#
+#   3. Open Selenoid UI dashboard:
+#      http://localhost:8080
+#
+#   4. Update config/config.yaml:
+#        grid:
+#          enabled: true
+#          url: "http://localhost:4444/wd/hub"
+#
+#   5. Run tests:
+#      pytest tests/ -n 3 --alluredir=reports/allure-results
+#
+#   6. Stop Grid:
+#      docker-compose down
+# ──────────────────────────────────────────────────────
